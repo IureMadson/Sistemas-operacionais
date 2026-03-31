@@ -1,0 +1,38 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <windows.h>
+
+LPVOID fiberA, fiberB, fiberPrincipal;
+
+VOID WINAPI tarefaA(LPVOID parametro){
+    for(int i = 1; i<=3;i++){
+        printf("etapa concluida. Iniciando B\n");
+        SwitchToFiber(fiberB);
+    }
+    printf("fim do A, indo pro principal\n");
+    SwitchToFiber(fiberPrincipal);
+}
+
+VOID WINAPI tarefaB(LPVOID parametro){
+    for(int i = 1; i<=3;i++){
+        printf("etapa concluida. Iniciando A\n");
+        SwitchToFiber(fiberA);
+    }
+}
+
+int main()
+{
+    fiberPrincipal = ConvertThreadToFiber(NULL);
+    //se faltar parametro (o que esta NULL), usar variaveis globais
+    fiberA = CreateFiber(0, tarefaA, NULL);
+    fiberB = CreateFiber(0, tarefaB, NULL);
+    printf("iniciando ping pong\n");
+
+    SwitchToFiber(fiberA);
+    printf("cabou\n");
+    DeleteFiber(fiberA);
+    DeleteFiber(fiberB);
+
+
+    return 0;
+}
