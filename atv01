@@ -1,0 +1,72 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <windows.h>
+
+typedef struct{
+    int idTarefa;
+    char nomeTarefa[51];
+    LPVOID DestinoRetorno;
+} dadosTarefa;
+
+VOID WINAPI funcaoFiber(LPVOID parametro){
+    dadosTarefa* dados= (dadosTarefa*)parametro;
+    printf("(tarefa %d) - trabalhando no %s\n", dados->idTarefa, dados->nomeTarefa);
+    SwitchToFiber(dados ->DestinoRetorno);
+}
+
+int main()
+{
+
+    LPVOID fiberPrincipal = ConvertThreadToFiber (NULL);
+    dadosTarefa meusDados={101, "Calculo de matrizes", fiberPrincipal};
+    LPVOID fiberSecundaria = CreateFiber(0, funcaoFiber, &meusDados);
+
+    if(fiberPrincipal == NULL){
+        printf("DEU ERRO KKKKKKKK\n");
+        return 1;
+    }
+
+    printf("Principal\n");
+    SwitchToFiber(fiberSecundaria);
+    printf("pronto :)\n");
+    DeleteFiber(fiberSecundaria);
+
+
+    return 0;
+}
+#include <stdio.h>
+#include <stdlib.h>
+#include <windows.h>
+
+typedef struct{
+    int idTarefa;
+    char nomeTarefa[51];
+    LPVOID DestinoRetorno;
+} dadosTarefa;
+
+VOID WINAPI funcaoFiber(LPVOID parametro){
+    dadosTarefa* dados= (dadosTarefa*)parametro;
+    printf("(tarefa %d) - trabalhando no %s\n", dados->idTarefa, dados->nomeTarefa);
+    SwitchToFiber(dados ->DestinoRetorno);
+}
+
+int main()
+{
+
+    LPVOID fiberPrincipal = ConvertThreadToFiber (NULL);
+    dadosTarefa meusDados={101, "Calculo de matrizes", fiberPrincipal};
+    LPVOID fiberSecundaria = CreateFiber(0, funcaoFiber, &meusDados);
+
+    if(fiberPrincipal == NULL){
+        printf("DEU ERRO KKKKKKKK\n");
+        return 1;
+    }
+
+    printf("Principal\n");
+    SwitchToFiber(fiberSecundaria);
+    printf("pronto :)\n");
+    DeleteFiber(fiberSecundaria);
+
+
+    return 0;
+}
