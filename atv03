@@ -1,0 +1,50 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <windows.h>
+
+#define TOTAL_FIBER 3
+
+LPVOID listaFibers[TOTAL_FIBER];
+LPVOID fiberPrincipal;
+int indiceAtual;
+int fiberRestantes = TOTAL_FIBER;
+
+void pararExecucao(){  // preempção
+    int proximoIndice = (indiceAtual + 1) % TOTAL_FIBER;
+    indiceAtual = proximoIndice;
+    SwitchToFiber(listaFibers[proximoIndice]);
+}
+VOID WINAPI trabalhadorGenerico(LPVOID x){
+    int id = (int)(intptr_t)x;
+    for(int i = 0; i <=2; i++){
+       printf("executando passo %d, pausando %d\n",id,i);
+       pararExecucao();
+    }
+    printf("processo %d terminou\n",id);
+    fiberRestantes--;
+
+    if(fiberRestantes == 0){
+        SwitchToFiber(fiberPrincipal);
+    } else {
+        pararExecucao();
+    }
+}
+
+
+
+int main()
+{
+    fiberPrincipal = ConvertThreadToFiber(NULL);
+
+    for(int i = 0; i < TOTAL_FIBER; i++){
+        listaFibers[i] = CreateFiber(0, trabalhadorGenerico, (LPVOID)(intptr_t)i);
+    }
+    printf("iniciando escalonamento\n\n");
+    indiceAtual = 0;
+    SwitchToFiber(listaFibers[0]);
+    printf("pronto gg\n");
+    for(int i = 0; i < TOTAL_FIBER; i++){
+       DeleteFiber(listaFibers[i]);
+    }
+    return 0;
+}
