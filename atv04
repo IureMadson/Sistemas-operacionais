@@ -1,0 +1,42 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <windows.h>
+
+#define TOTAL_FIBER 3
+
+DWORD memoria; //criar memoria separada 4 bytes
+LPVOID fiberPrincipal;
+
+
+VOID WINAPI processo(LPVOID x){
+    int dados = (int)(intptr_t)x;
+    FlsSetValue(memoria, (LPVOID)(intptr_t)dados);
+    printf("Fiber rodando, valor na memória: %d\n", dados);
+    SwitchToFiber(fiberPrincipal);
+    int valorRecuperacao = (int)(intptr_t)FlsGetValue(memoria);
+    printf("Voltando\n");
+    SwitchToFiber(fiberPrincipal);
+
+}
+
+
+
+int main()
+{
+    fiberPrincipal = ConvertThreadToFiber(NULL);
+
+    memoria = FlsAlloc(NULL);
+    LPVOID f1 = CreateFiber(0,processo,(LPVOID)777);
+    LPVOID f2 = CreateFiber(0,processo,(LPVOID)999);
+
+    printf("Primeira execução\n\n");
+    SwitchToFiber(f1);
+    SwitchToFiber(f2);
+    printf("Fim da primeira execução\n\n");
+    SwitchToFiber(f1);
+    SwitchToFiber(f2);
+    DeleteFiber(f1);
+    DeleteFiber(f2);
+    FlsFree(memoria);
+    return 0;
+}
