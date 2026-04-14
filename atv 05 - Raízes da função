@@ -1,0 +1,77 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <windows.h>
+#include <math.h>
+
+typedef struct {
+    double a, b, c;
+    double delta;
+    double sqrtDelta;
+    double x1, x2;
+    LPVOID fiberSqrt;
+    LPVOID fiberX1;
+    LPVOID fiberX2;
+    LPVOID fiberPrincipal;
+} Equacao;
+//calcula o valor de delta
+VOID WINAPI fiberDelta(LPVOID ipParam){
+    Equacao* funcao = (Equacao*)ipParam;
+    funcao->delta = pow((funcao->b),2)- (4* funcao->a*funcao->c);
+    if(funcao->delta < 0){
+        printf("Delta negativo, deu ruim (～￣▽￣)～\n");
+        SwitchToFiber(funcao->fiberPrincipal);
+    } else {
+        SwitchToFiber(funcao->fiberSqrt);
+    }
+}
+//calcula a raiz de delta
+VOID WINAPI fiberSqrt(LPVOID ipParam){
+    Equacao* funcao = (Equacao*)ipParam;
+    funcao->sqrtDelta = sqrt(funcao->delta);
+    SwitchToFiber(funcao->fiberX1);
+}
+//calcula o x1
+VOID WINAPI fiberX1(LPVOID ipParam){
+    Equacao* funcao = (Equacao*)ipParam;
+    funcao->x1 = (-1*(funcao->b)+(funcao->sqrtDelta))/(2*(funcao->a));
+    SwitchToFiber(funcao->fiberX2);
+}
+//calcula o x2
+VOID WINAPI fiberX2(LPVOID ipParam){
+    Equacao* funcao = (Equacao*)ipParam;
+    funcao->x2 = (-1*(funcao->b)-(funcao->sqrtDelta))/(2*(funcao->a));
+    SwitchToFiber(funcao->fiberPrincipal);
+}
+
+
+int main()
+{
+    LPVOID fiberMain = ConvertThreadToFiber(NULL);
+    Equacao funcao;
+    if(!fiberMain){
+        printf("DEU ERRO U-U\n");
+        return 1;
+    }
+    funcao.a = 1;
+    funcao.b = -5;
+    funcao.c = 6;
+
+    funcao.fiberPrincipal = fiberMain;
+    funcao.fiberSqrt = CreateFiber(0, fiberSqrt, &funcao);
+    funcao.fiberX1 = CreateFiber(0, fiberX1,&funcao);
+    funcao.fiberX2 = CreateFiber(0, fiberX2,&funcao);
+
+    LPVOID fDelta = CreateFiber(0, fiberDelta, &funcao);
+    SwitchToFiber(fDelta);
+    if(funcao.delta >=0){
+        printf("resultados:\n");
+        printf("X1 = %.2lf\n", funcao.x1);
+        printf("X2 = %.2lf\n", funcao.x2);
+    }
+    DeleteFiber(fDelta);
+    DeleteFiber(funcao.fiberSqrt);
+    DeleteFiber(funcao.fiberX1);
+    DeleteFiber(funcao.fiberX2);
+
+    return 0;
+}
