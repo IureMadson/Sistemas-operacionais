@@ -1,0 +1,47 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <stdatomic.h>
+
+int c = 0;
+#define N  1000000
+atomic_flag trava = ATOMIC_FLAG_INIT;
+
+void* incremento (void* arg){
+    for(int i = 0; i <N; i++){
+        //entrada (espera ocupada)
+        while(atomic_flag_test_and_set(&trava)){
+        }
+        //entrada completa
+        c++;
+        //saída
+        atomic_flag_clear(&trava);
+    }
+    pthread_exit(NULL);
+}
+
+void* decremento (void* arg){
+    for(int i = 0; i <N; i++){
+        //entrada (espera ocupada)
+        while(atomic_flag_test_and_set(&trava)){
+        }
+        //entrada completa
+        c--;
+        //saída
+        atomic_flag_clear(&trava);
+    }
+    pthread_exit(NULL);
+}
+
+int main(){
+    pthread_t t1, t2;
+    pthread_create(&t1, NULL, incremento, NULL);
+    pthread_create(&t1, NULL, decremento, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+
+    printf("%d\n", c);
+    return 0;
+}
