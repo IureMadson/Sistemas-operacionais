@@ -1,0 +1,66 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+#define TAM 5
+#define ITENS 10
+
+int buffer[TAM];
+int p = 0;
+int c = 0;
+
+sem_t vazio;
+sem_t cheio;
+pthread_mutex_t mut;
+
+void* produtor(void* arg){
+    for(int i =0; i< ITENS; i++){
+        int item = i+1;
+        sem_wait(&vazio);
+        pthread_mutex_lock(&mut);
+
+        buffer[p]= item;
+        printf("O produtor botou %d na posição %d\n", item, p);
+        p= (p+1)%TAM;
+        pthread_mutex_unlock(&mut);
+        sem_post(&cheio);
+        usleep(1000);
+    }
+    return NULL;
+}
+
+void* consumidor(void* arg){
+    for(int i =0; i< ITENS; i++){
+        sem_wait(&vazio);
+        pthread_mutex_lock(&mut);
+
+        int item = buffer[c];
+
+        printf("O consumidor pegou %d na posição %d\n", item, p);
+        c= (c+1)%TAM;
+        pthread_mutex_unlock(&mut);
+        sem_post(&vazio);
+        usleep(1000);
+    }
+    return NULL;
+}
+
+int main()
+{
+    pthread_t t_prod, t_cons;
+    sem_init(&vazio, 0, TAM);
+    sem_init(&cheio,0,0);
+    pthread_mutex_init(&mut, NULL);
+    pthread_create(&t_prod, NULL, produtor, NULL);
+    pthread_create(&t_cons, NULL, consumidor, NULL);
+    pthread_join(t_prod,NULL);
+    pthread_join(t_cons,NULL);
+    sem_destroy(&vazio);
+    sem_destroy(&cheio);
+    pthread_mutex_destroy(&mut);
+
+    printf("\nFim\n");
+    return 0;
+}
